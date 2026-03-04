@@ -64,7 +64,7 @@ export default function App() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const response = await fetch("http://127.0.0.1:8000/translate", {
+      const response = await fetch("https://medical-translator-production-fb71.up.railway.app/translate", {
         method: "POST",
         body: formData,
       });
@@ -86,7 +86,7 @@ export default function App() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch("http://127.0.0.1:8000/save", {
+      await fetch("https://medical-translator-production-fb71.up.railway.app/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(result),
