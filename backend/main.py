@@ -2,9 +2,11 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from openai import OpenAI
+import boto3
 import fitz
 import os
 import json
+from datetime import datetime
 
 load_dotenv()
 
@@ -18,6 +20,13 @@ app.add_middleware(
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    region_name=os.getenv("AWS_REGION")
+)
 
 def extract_text_from_pdf(file_bytes):
     doc = fitz.open(stream=file_bytes, filetype="pdf")
@@ -63,7 +72,7 @@ async def translate(file: UploadFile = File(...)):
     "risk_level": 65
   }},
   "child": {{
-    "story": "סיפור יצירתי ומשעשע של 4-5 משפטים שמסביר את המחקר לילד עם אנלוגיות מהחיים",
+    "story": "סיפור יצירתי ומשעשע של 4-5 משפטים",
     "emoji_summary": ["🦠", "💊", "🔬", "❤️", "✅"]
   }}
 }}
@@ -80,3 +89,16 @@ async def translate(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=result.get("error", "זה לא מאמר רפואי"))
     
     return result
+
+@app.post("/save")
+async def save_to_s3(data: dict):
+    filename = f"translation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    
+    s3.put_object(
+        Bucket=os.getenv("AWS_BUCKET_NAME"),
+        Key=filename,
+        Body=json.dumps(data, ensure_ascii=False, indent=2),
+        ContentType="application/json"
+    )
+    
+    return {"message": "נשמר בהצלחה", "filename": filename}

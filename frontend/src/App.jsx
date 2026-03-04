@@ -51,6 +51,8 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("doctor");
 
   const handleTranslate = async () => {
@@ -58,6 +60,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setSaved(false);
     const formData = new FormData();
     formData.append("file", file);
     try {
@@ -80,6 +83,21 @@ export default function App() {
     setLoading(false);
   };
 
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch("http://127.0.0.1:8000/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result),
+      });
+      setSaved(true);
+    } catch {
+      alert("שגיאה בשמירה");
+    }
+    setSaving(false);
+  };
+
   return (
     <div className="min-h-screen bg-slate-100" dir="rtl">
       <div className="bg-gradient-to-l from-indigo-600 to-purple-700 px-8 py-8 text-white">
@@ -93,7 +111,7 @@ export default function App() {
           <input
             type="file"
             accept=".pdf"
-            onChange={(e) => { setFile(e.target.files[0]); setError(null); setResult(null); }}
+            onChange={(e) => { setFile(e.target.files[0]); setError(null); setResult(null); setSaved(false); }}
             className="block mb-5 text-sm text-gray-500"
           />
           <button
@@ -117,10 +135,25 @@ export default function App() {
 
         {result && (
           <div className="bg-white rounded-2xl shadow overflow-hidden">
-            <div className="flex border-b border-gray-200 px-6">
-              <TabButton active={activeTab === "doctor"} onClick={() => setActiveTab("doctor")}>👨‍⚕️ רופא</TabButton>
-              <TabButton active={activeTab === "patient"} onClick={() => setActiveTab("patient")}>🙋 מטופל</TabButton>
-              <TabButton active={activeTab === "child"} onClick={() => setActiveTab("child")}>👧 ילד</TabButton>
+            <div className="flex justify-between items-center border-b border-gray-200 px-6">
+              <div className="flex">
+                <TabButton active={activeTab === "doctor"} onClick={() => setActiveTab("doctor")}>👨‍⚕️ רופא</TabButton>
+                <TabButton active={activeTab === "patient"} onClick={() => setActiveTab("patient")}>🙋 מטופל</TabButton>
+                <TabButton active={activeTab === "child"} onClick={() => setActiveTab("child")}>👧 ילד</TabButton>
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={saving || saved}
+                className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${
+                  saved
+                    ? "bg-green-100 text-green-700 cursor-default"
+                    : saving
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
+              >
+                {saved ? "✅ נשמר!" : saving ? "שומר..." : "☁️ שמור בענן"}
+              </button>
             </div>
 
             <div className="p-8">
